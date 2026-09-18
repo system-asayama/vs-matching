@@ -8,6 +8,12 @@ services:
       - "${WEB_PORT:-8080}:8000"
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/vs_matching
+      # セッション署名用。本番では必ず長いランダム文字列に置き換える。
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      # 両方指定した場合のみ起動時に初期管理者を自動作成する。
+      # 未指定なら初回アクセス時の /setup 画面で最初の管理者を登録する。
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       - db
     restart: unless-stopped

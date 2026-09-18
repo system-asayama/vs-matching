@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}利用者を登録 - vs-matching{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>利用者を登録</h1>
+  <p class="muted">登録したログインIDとパスワードを本人に伝えてください。本人はログイン後にパスワードを変更できます。</p>
+  <form method="post" action="{{ url_for('admin_create_user') }}">
+    <label for="username">ログインID</label>
+    <input id="username" name="username" value="{{ form.get('username', '') }}" autocomplete="off" autofocus required>
+
+    <label for="display_name">表示名（省略時はログインID）</label>
+    <input id="display_name" name="display_name" value="{{ form.get('display_name', '') }}" autocomplete="off">
+
+    <label for="role">ロール</label>
+    <select id="role" name="role">
+      {% for r in roles %}
+        <option value="{{ r }}" {% if form.get('role', 'user') == r %}selected{% endif %}>{{ ROLE_LABELS[r] }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="password">初期パスワード（8文字以上）</label>
+    <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+
+    <label for="confirm">初期パスワード（確認）</label>
+    <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="8" required>
+
+    <div class="actions">
+      <button type="submit">登録する</button>
+      <a class="btn secondary" href="{{ url_for('admin_users') }}">戻る</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

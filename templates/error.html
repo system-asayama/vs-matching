@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ code }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>{{ code }}</h1>
+  <p>{{ message }}</p>
+  <a class="btn secondary" href="{{ url_for('index') }}">トップへ戻る</a>
+</div>
+{% endblock %}

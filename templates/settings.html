@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}アカウント設定 - vs-matching{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h1>アカウント設定</h1>
+  <p class="muted">ログインID: <strong>{{ user.username }}</strong>（変更できません）</p>
+  <form method="post" action="{{ url_for('settings') }}">
+    <label for="display_name">表示名</label>
+    <input id="display_name" name="display_name" value="{{ user.display_name }}" required>
+
+    <label for="new_password">新しいパスワード（変更しない場合は空欄）</label>
+    <input id="new_password" name="new_password" type="password" autocomplete="new-password" minlength="8">
+
+    <label for="confirm">新しいパスワード（確認）</label>
+    <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="8">
+
+    <label for="current_password">現在のパスワード（本人確認のため必須）</label>
+    <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+
+    <button type="submit">更新する</button>
+  </form>
+</div>
+{% endblock %}

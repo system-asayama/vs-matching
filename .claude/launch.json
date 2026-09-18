@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vs-matching",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "flask", "--app", "app", "run", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

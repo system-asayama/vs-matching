@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}ダッシュボード - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>ダッシュボード</h1>
+  <p>ようこそ、<strong>{{ user.display_name }}</strong> さん。</p>
+  <table>
+    <tr><th>ログインID</th><td>{{ user.username }}</td></tr>
+    <tr><th>ロール</th><td><span class="badge {{ user.role }}">{{ user.role_label }}</span></td></tr>
+    <tr><th>登録日時</th><td class="muted">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+    <tr><th>最終ログイン</th><td class="muted">{% if user.last_login_at %}{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td></tr>
+  </table>
+  {% if user.is_admin %}
+  <p style="margin-top:16px"><a class="btn" href="{{ url_for('admin_users') }}">利用者管理へ</a></p>
+  {% endif %}
+</div>
+{% endblock %}
