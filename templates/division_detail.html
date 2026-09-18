@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}{{ d.name }} - {{ t.name }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h1><a class="link" href="{{ url_for('tournament.tournament_detail', tournament_id=t.id) }}">{{ t.name }}</a> ／ {{ d.name }}</h1>
+    <div class="actions">
+      <a class="btn small secondary" href="{{ url_for('tournament.division_edit', division_id=d.id) }}">条件・ルールを編集</a>
+    </div>
+  </div>
+  <p class="muted">
+    条件:
+    {{ '男性' if d.gender == 'male' else '女性' if d.gender == 'female' else '性別指定なし' }}
+    ／ 年齢 {{ d.min_age if d.min_age is not none else '-' }}〜{{ d.max_age if d.max_age is not none else '-' }}
+    ／ 体重 {{ '%g'|format(d.min_weight) if d.min_weight is not none else '-' }}〜{{ '%g'|format(d.max_weight) if d.max_weight is not none else '-' }}kg
+    ／ 同道場回避: {{ 'ON' if d.avoid_same_dojo else 'OFF' }}
+    ／ 体重差注意: {{ '%g'|format(d.weight_tolerance_kg) }}kg
+    {% if on %}（年齢は開催日 {{ on.strftime('%Y-%m-%d') }} 時点）{% endif %}
+  </p>
+</div>
+
+{% if rounds %}
+<div class="card">
+  <div class="toolbar">
+    <h2>トーナメント表 <span class="muted">{{ entries|length }}名・{{ d.bracket_size }}枠</span></h2>
+    <div class="actions">
+      <form method="post" action="{{ url_for('tournament.division_generate', division_id=d.id) }}"
+            onsubmit="return confirm('トーナメント表を作り直しますか？');">
+        <button class="small secondary" type="submit" {% if d.has_results %}disabled{% endif %}>作り直す</button>
+      </form>
+      <form method="post" action="{{ url_for('tournament.division_reset', division_id=d.id) }}"
+            onsubmit="return confirm('トーナメント表と試合結果を消してエントリー段階に戻します。よろしいですか？');">
+        <button class="small danger" type="submit">リセット</button>
+      </form>
+    </div>
+  </div>
+  {% set seeds = {} %}
+  {% for e in entries %}{% set _ = seeds.update({e.fighter_id: e.seed}) %}{% endfor %}
+  {% set admin = true %}
+  {% include "_bracket.html" with context %}
+  <p class="muted">シード番号（#）は強さスコア順です。注意マークは1回戦の組み合わせの目安で、必要に応じて下の入れ替えで調整してください。</p>
+
+  {% if not d.has_results %}
+  <h2 style="margin-top:16px">1回戦の枠を入れ替える</h2>
+  <form method="post" action="{{ url_for('tournament.division_swap', division_id=d.id) }}" class="inline">
+    <select name="fighter_a" class="small" required>
+      <option value="">選手A</option>
+      {% for f in first_round_fighters %}<option value="{{ f.id }}">{{ f.name }}（{{ f.dojo }}）</option>{% endfor %}
+    </select>
+    <span>⇄</span>
+    <select name="fighter_b" class="small" required>
+      <option value="">選手B</option>
+      {% for f in first_round_fighters %}<option value="{{ f.id }}">{{ f.name }}（{{ f.dojo }}）</option>{% endfor %}
+    </select>
+    <button class="small" type="submit">入れ替え</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="toolbar">
+    <h2>エントリー <span class="muted">{{ entries|length }}名</span></h2>
+    {% if not rounds %}
+    <div class="actions">
+      <form method="post" action="{{ url_for('tournament.division_auto_entries', division_id=d.id) }}">
+        <button class="small secondary" type="submit" {% if not candidates %}disabled{% endif %}>条件に合う{{ candidates|length }}名を一括追加</button>
+      </form>
+      <form method="post" action="{{ url_for('tournament.division_generate', division_id=d.id) }}">
+        <button class="small" type="submit" {% if entries|length < 2 %}disabled{% endif %}>トーナメント表を自動生成</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>シード</th><th>氏名</th><th>道場</th><th>性別</th><th>年齢</th><th>体重</th><th>帯</th><th>経験</th><th>戦績</th><th>強さ</th><th></th></tr></thead>
+      <tbody>
+        {% for e in entries %}
+        {% set f = e.fighter %}
+        <tr>
+          <td>{{ '#' ~ e.seed if e.seed else '-' }}</td>
+          <td class="wrap"><a class="link" href="{{ url_for('tournament.fighter_edit', fighter_id=f.id) }}">{{ f.name }}</a></td>
+          <td class="wrap">{{ f.dojo or '-' }}</td>
+          <td>{{ f.gender_label }}</td>
+          <td>{{ f.age_at(on) if f.age_at(on) is not none else '-' }}</td>
+          <td>{{ '%g'|format(f.weight_kg) ~ 'kg' if f.weight_kg else '-' }}</td>
+          <td>{{ f.belt }}</td>
+          <td>{{ '%g'|format(f.experience_years) }}年</td>
+          <td>{{ f.record }}</td>
+          <td><strong>{{ e.score if e.score is not none else strength_score(f) }}</strong></td>
+          <td>
+            {% if not rounds %}
+            <form method="post" action="{{ url_for('tournament.division_remove_entry', division_id=d.id, entry_id=e.id) }}">
+              <button class="small danger" type="submit">外す</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11" class="muted">エントリーはまだありません。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if not rounds %}
+  <h2 style="margin-top:20px">選手を個別に追加</h2>
+  <form method="post" action="{{ url_for('tournament.division_add_entry', division_id=d.id) }}" class="inline">
+    <select name="fighter_id" class="small" required>
+      <option value="">選手を選択</option>
+      {% if candidates %}
+      <optgroup label="条件に合う選手">
+        {% for f in candidates %}<option value="{{ f.id }}">{{ f.name }}（{{ f.dojo or '道場なし' }} / {{ f.belt }} / {{ '%g'|format(f.weight_kg) ~ 'kg' if f.weight_kg else '体重未登録' }}）</option>{% endfor %}
+      </optgroup>
+      {% endif %}
+      {% if others %}
+      <optgroup label="条件外の選手（手動で追加可）">
+        {% for f in others %}<option value="{{ f.id }}">{{ f.name }}（{{ f.dojo or '道場なし' }} / {{ f.belt }} / {{ '%g'|format(f.weight_kg) ~ 'kg' if f.weight_kg else '体重未登録' }}）</option>{% endfor %}
+      </optgroup>
+      {% endif %}
+    </select>
+    <button class="small" type="submit">追加</button>
+  </form>
+  <p class="muted">同じ大会の別の階級にエントリー済みの選手は表示されません。</p>
+  {% endif %}
+</div>
+{% endblock %}

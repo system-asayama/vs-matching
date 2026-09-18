@@ -1,25 +1,17 @@
-"""vs-matching ログインシステム。
+"""vs-matching: 空手トーナメント自動組み合わせアプリ。
 
 - 管理者(admin) / 利用者(user) の2ロール
 - 最初の管理者はブートストラップ画面(/setup)または環境変数で登録
 - 利用者は管理者だけが登録できる（自己登録は無し）
-- セッションベース認証、パスワードはハッシュ化して保存
+- 選手・大会・階級の管理と、強さ/体格/道場を考慮したトーナメント表の自動生成
 """
 import os
-from functools import wraps
 
-from flask import (
-    Flask,
-    abort,
-    flash,
-    redirect,
-    render_template,
-    request,
-    session,
-    url_for,
-)
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 
-from models import ROLE_ADMIN, ROLE_LABELS, ROLE_USER, ROLES, User, utcnow, db
+from auth import admin_required, current_user, login_required, login_user, safe_next
+from models import ROLE_ADMIN, ROLE_LABELS, ROLE_USER, ROLES, User, db
+from tournament import bp as tournament_bp
 
 MIN_PASSWORD_LENGTH = 8
 
@@ -36,6 +28,7 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024  # CSV 取り込み上限
 
     database_url = os.environ.get("DATABASE_URL")
     if database_url:
@@ -52,6 +45,7 @@ def create_app() -> Flask:
         _maybe_seed_admin()
 
     _register_routes(app)
+    app.register_blueprint(tournament_bp)
     return app
 
 
@@ -90,59 +84,6 @@ def _validate_password(password: str, confirm: str | None = None) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# 認証ヘルパー
-# ---------------------------------------------------------------------------
-def current_user() -> User | None:
-    user_id = session.get("user_id")
-    if user_id is None:
-        return None
-    user = db.session.get(User, user_id)
-    if user is None or not user.is_active:
-        session.clear()
-        return None
-    return user
-
-
-def _login(user: User) -> None:
-    session.clear()
-    session["user_id"] = user.id
-    user.last_login_at = utcnow()
-    db.session.commit()
-
-
-def login_required(view):
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if current_user() is None:
-            flash("ログインが必要です。", "error")
-            return redirect(url_for("login", next=request.path))
-        return view(*args, **kwargs)
-
-    return wrapped
-
-
-def admin_required(view):
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        user = current_user()
-        if user is None:
-            flash("ログインが必要です。", "error")
-            return redirect(url_for("login", next=request.path))
-        if not user.is_admin:
-            abort(403)
-        return view(*args, **kwargs)
-
-    return wrapped
-
-
-def _safe_next(default: str) -> str:
-    nxt = request.args.get("next") or request.form.get("next") or ""
-    if nxt.startswith("/") and not nxt.startswith("//"):
-        return nxt
-    return default
-
-
-# ---------------------------------------------------------------------------
 # ルーティング
 # ---------------------------------------------------------------------------
 def _register_routes(app: Flask) -> None:
@@ -165,7 +106,7 @@ def _register_routes(app: Flask) -> None:
         user = current_user()
         if user is None:
             return redirect(url_for("login"))
-        return redirect(url_for("admin_users" if user.is_admin else "dashboard"))
+        return redirect(url_for("tournament.tournaments" if user.is_admin else "tournament.public_tournaments"))
 
     # --- ブートストラップ ---------------------------------------------------
     @app.route("/setup", methods=["GET", "POST"])
@@ -193,7 +134,7 @@ def _register_routes(app: Flask) -> None:
                 admin.set_password(password)
                 db.session.add(admin)
                 db.session.commit()
-                _login(admin)
+                login_user(admin)
                 flash("最初の管理者を登録しました。", "success")
                 return redirect(url_for("admin_users"))
 
@@ -214,10 +155,9 @@ def _register_routes(app: Flask) -> None:
 
             user = User.query.filter_by(username=username).first()
             if user is not None and user.is_active and user.check_password(password):
-                _login(user)
+                login_user(user)
                 flash(f"ようこそ、{user.display_name} さん。", "success")
-                default = url_for("admin_users" if user.is_admin else "dashboard")
-                return redirect(_safe_next(default))
+                return redirect(safe_next(url_for("index")))
 
             flash("ログインIDまたはパスワードが正しくありません。", "error")
 
@@ -310,7 +250,9 @@ def _register_routes(app: Flask) -> None:
     @app.route("/admin/users/<int:user_id>/role", methods=["POST"])
     @admin_required
     def admin_update_role(user_id):
-        user = db.session.get(User, user_id) or abort(404)
+        user = db.session.get(User, user_id)
+        if user is None:
+            return not_found(None)
         new_role = request.form.get("role")
         if new_role not in ROLES:
             flash("無効なロールです。", "error")
@@ -332,7 +274,9 @@ def _register_routes(app: Flask) -> None:
     @admin_required
     def admin_toggle_user(user_id):
         """利用停止 / 再開を切り替える。"""
-        user = db.session.get(User, user_id) or abort(404)
+        user = db.session.get(User, user_id)
+        if user is None:
+            return not_found(None)
         if user.id == current_user().id:
             flash("自分自身は停止できません。", "error")
             return redirect(url_for("admin_users"))
@@ -350,7 +294,9 @@ def _register_routes(app: Flask) -> None:
     @admin_required
     def admin_reset_password(user_id):
         """管理者が利用者のパスワードを再設定する。"""
-        user = db.session.get(User, user_id) or abort(404)
+        user = db.session.get(User, user_id)
+        if user is None:
+            return not_found(None)
         password = request.form.get("password") or ""
         error = _validate_password(password)
         if error:
@@ -364,7 +310,9 @@ def _register_routes(app: Flask) -> None:
     @app.route("/admin/users/<int:user_id>/delete", methods=["POST"])
     @admin_required
     def admin_delete_user(user_id):
-        user = db.session.get(User, user_id) or abort(404)
+        user = db.session.get(User, user_id)
+        if user is None:
+            return not_found(None)
         if user.id == current_user().id:
             flash("自分自身は削除できません。", "error")
             return redirect(url_for("admin_users"))

@@ -16,15 +16,17 @@
              background:none; border:none; padding:0; font-size:15px; cursor:pointer; }
     header .brand { font-weight:700; font-size:18px; }
     header nav form { display:inline; }
-    .container { max-width:960px; margin:32px auto; padding:0 16px; }
+    .container { max-width:1100px; margin:32px auto; padding:0 16px; }
     .card { background:var(--card); border-radius:12px; padding:24px;
             box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:20px; }
     .card.narrow { max-width:400px; margin-left:auto; margin-right:auto; }
+    .card.medium { max-width:640px; margin-left:auto; margin-right:auto; }
     h1 { margin-top:0; font-size:22px; }
-    h2 { font-size:18px; }
+    h2 { font-size:18px; margin:0 0 12px; }
     label { display:block; margin:12px 0 4px; font-size:14px; color:var(--muted); }
-    input, select { width:100%; padding:10px; border:1px solid var(--border);
-                    border-radius:8px; font-size:15px; }
+    input, select, textarea { width:100%; padding:10px; border:1px solid var(--border);
+                    border-radius:8px; font-size:15px; font-family:inherit; }
+    input[type=checkbox] { width:auto; }
     input.small, select.small { width:auto; padding:6px 8px; font-size:13px; }
     button, a.btn { cursor:pointer; border:none; border-radius:8px; padding:10px 16px;
              font-size:15px; background:var(--primary); color:#fff; margin-top:16px;
@@ -32,7 +34,7 @@
     button.danger { background:var(--danger); }
     button.warn { background:var(--warn); }
     button.secondary, a.btn.secondary { background:#e9ecef; color:#333; }
-    button.small { padding:6px 10px; font-size:13px; margin-top:0; }
+    button.small, a.btn.small { padding:6px 10px; font-size:13px; margin-top:0; }
     .muted { color:var(--muted); font-size:14px; }
     .flash { padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:14px; }
     .flash.success { background:#e6fcf5; color:#0c8599; }
@@ -47,22 +49,51 @@
     .badge.admin { background:#fff3bf; color:#a06b00; }
     .badge.user { background:#e7f5ff; color:#1971c2; }
     .badge.off { background:#f1f3f5; color:#868e96; }
+    .badge.warn { background:#fff4e6; color:#d9480f; }
+    .badge.ok { background:#e6fcf5; color:#0c8599; }
     .inline { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-    .actions { display:flex; gap:12px; align-items:center; }
+    .actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     a.link { color:var(--primary); }
-    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
     .toolbar h1 { margin:0; }
-    .toolbar a.btn { margin-top:0; }
+    .toolbar a.btn, .toolbar button { margin-top:0; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+    @media (max-width:600px) { .grid2 { grid-template-columns:1fr; } }
+    fieldset { border:1px solid var(--border); border-radius:8px; padding:8px 16px 16px; margin:16px 0 0; }
+    legend { font-size:14px; color:var(--muted); padding:0 6px; }
+
+    /* トーナメント表 */
+    .bracket { display:flex; gap:24px; overflow-x:auto; padding:8px 0 16px; }
+    .round { display:flex; flex-direction:column; justify-content:space-around; min-width:220px; }
+    .round-title { text-align:center; font-size:13px; color:var(--muted); margin-bottom:8px; font-weight:600; }
+    .match { border:1px solid var(--border); border-radius:8px; background:#fff; margin:6px 0;
+             font-size:13px; overflow:hidden; }
+    .match .no { background:#f1f3f5; color:var(--muted); font-size:11px; padding:2px 8px; display:flex; justify-content:space-between; }
+    .match .side { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; gap:6px; }
+    .match .side + .side { border-top:1px solid #eee; }
+    .match .side.winner { background:#e6fcf5; font-weight:600; }
+    .match .side.empty { color:#aaa; font-style:italic; }
+    .match .seed { color:var(--muted); font-size:11px; margin-right:4px; }
+    .match .dojo { color:var(--muted); font-size:11px; display:block; }
+    .match form { display:inline; }
+    .match button { margin:0; padding:2px 8px; font-size:11px; }
+    .match .warns { padding:2px 8px 6px; }
+    .champion { text-align:center; padding:12px; background:#fff3bf; border-radius:8px; font-weight:700; }
   </style>
 </head>
 <body>
   <header>
-    <span class="brand">🔐 vs-matching</span>
+    <span class="brand">🥋 vs-matching</span>
     <nav>
       {% if current_user %}
-        <span class="muted" style="color:#dbe4ff">{{ current_user.display_name }}（{{ current_user.role_label }}）</span>
-        <a href="{{ url_for('dashboard') }}">ダッシュボード</a>
-        {% if current_user.is_admin %}<a href="{{ url_for('admin_users') }}">利用者管理</a>{% endif %}
+        <span style="color:#dbe4ff; font-size:14px">{{ current_user.display_name }}（{{ current_user.role_label }}）</span>
+        {% if current_user.is_admin %}
+          <a href="{{ url_for('tournament.tournaments') }}">大会</a>
+          <a href="{{ url_for('tournament.fighters') }}">選手</a>
+          <a href="{{ url_for('admin_users') }}">利用者管理</a>
+        {% else %}
+          <a href="{{ url_for('tournament.public_tournaments') }}">大会</a>
+        {% endif %}
         <a href="{{ url_for('settings') }}">アカウント設定</a>
         <form method="post" action="{{ url_for('logout') }}">
           <button type="submit" class="linklike">ログアウト</button>

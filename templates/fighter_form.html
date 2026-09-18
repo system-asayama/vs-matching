@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ '選手を編集' if f.id else '選手を登録' }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card medium">
+  <h1>{{ '選手を編集' if f.id else '選手を登録' }}</h1>
+  <form method="post">
+    <div class="grid2">
+      <div>
+        <label for="name">氏名 *</label>
+        <input id="name" name="name" value="{{ f.name or '' }}" required autofocus>
+      </div>
+      <div>
+        <label for="kana">ふりがな</label>
+        <input id="kana" name="kana" value="{{ f.kana or '' }}">
+      </div>
+      <div>
+        <label for="gender">性別</label>
+        <select id="gender" name="gender">
+          {% for v, l in genders %}<option value="{{ v }}" {% if f.gender == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="birth_date">生年月日</label>
+        <input id="birth_date" name="birth_date" type="date" value="{{ f.birth_date.isoformat() if f.birth_date else '' }}">
+      </div>
+      <div>
+        <label for="dojo">所属道場</label>
+        <input id="dojo" name="dojo" value="{{ f.dojo or '' }}" list="dojo-list">
+        <datalist id="dojo-list">{% for d in dojos %}<option value="{{ d }}">{% endfor %}</datalist>
+      </div>
+      <div></div>
+    </div>
+
+    <fieldset>
+      <legend>体格</legend>
+      <div class="grid2">
+        <div>
+          <label for="height_cm">身長 (cm)</label>
+          <input id="height_cm" name="height_cm" type="number" step="0.1" min="0" value="{{ '%g'|format(f.height_cm) if f.height_cm else '' }}">
+        </div>
+        <div>
+          <label for="weight_kg">体重 (kg)</label>
+          <input id="weight_kg" name="weight_kg" type="number" step="0.1" min="0" value="{{ '%g'|format(f.weight_kg) if f.weight_kg else '' }}">
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>強さ・経歴</legend>
+      <div class="grid2">
+        <div>
+          <label for="belt">帯・段位</label>
+          <select id="belt" name="belt">
+            {% for b in belts %}<option value="{{ b }}" {% if f.belt == b %}selected{% endif %}>{{ b }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="experience_years">経験年数</label>
+          <input id="experience_years" name="experience_years" type="number" step="0.5" min="0" value="{{ '%g'|format(f.experience_years or 0) }}">
+        </div>
+        <div>
+          <label for="wins">勝</label>
+          <input id="wins" name="wins" type="number" min="0" value="{{ f.wins or 0 }}">
+        </div>
+        <div>
+          <label for="losses">敗</label>
+          <input id="losses" name="losses" type="number" min="0" value="{{ f.losses or 0 }}">
+        </div>
+        <div>
+          <label for="draws">分</label>
+          <input id="draws" name="draws" type="number" min="0" value="{{ f.draws or 0 }}">
+        </div>
+      </div>
+      {% if breakdown %}
+      <p class="muted" style="margin-top:12px">
+        強さスコアの内訳:
+        {% for label, pts in breakdown %}{{ label }} = {{ pts }}{% if not loop.last %}、{% endif %}{% endfor %}
+      </p>
+      {% endif %}
+    </fieldset>
+
+    <label for="notes">備考</label>
+    <textarea id="notes" name="notes" rows="3">{{ f.notes or '' }}</textarea>
+
+    <div class="actions">
+      <button type="submit">{{ '更新する' if f.id else '登録する' }}</button>
+      <a class="btn secondary" href="{{ url_for('tournament.fighters') }}">戻る</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

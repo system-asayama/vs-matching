@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}大会一覧 - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>大会一覧</h1>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>開催日</th><th>大会名</th><th>会場</th><th>階級数</th></tr></thead>
+      <tbody>
+        {% for t in tournaments %}
+        <tr>
+          <td>{{ t.event_date.strftime('%Y-%m-%d') if t.event_date else '-' }}</td>
+          <td class="wrap"><a class="link" href="{{ url_for('tournament.public_tournament', tournament_id=t.id) }}">{{ t.name }}</a>
+            {% if not t.is_published %}<span class="badge off">非公開</span>{% endif %}</td>
+          <td class="wrap">{{ t.venue or '-' }}</td>
+          <td>{{ t.divisions|length }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="muted">公開中の大会はありません。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

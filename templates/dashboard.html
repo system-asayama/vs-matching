@@ -11,7 +11,7 @@
     <tr><th>最終ログイン</th><td class="muted">{% if user.last_login_at %}{{ user.last_login_at.strftime('%Y-%m-%d %H:%M') }}{% else %}-{% endif %}</td></tr>
   </table>
   {% if user.is_admin %}
-  <p style="margin-top:16px"><a class="btn" href="{{ url_for('admin_users') }}">利用者管理へ</a></p>
+  <p style="margin-top:16px"><a class="btn" href="{{ url_for('tournament.tournaments') }}">大会管理へ</a></p>
   {% endif %}
 </div>
 {% endblock %}

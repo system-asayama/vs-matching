@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}大会一覧 - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h1>大会一覧</h1>
+    <a class="btn" href="{{ url_for('tournament.tournament_new') }}">＋ 大会を作成</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>開催日</th><th>大会名</th><th>会場</th><th>階級数</th><th>公開</th><th></th></tr></thead>
+      <tbody>
+        {% for t in tournaments %}
+        <tr>
+          <td>{{ t.event_date.strftime('%Y-%m-%d') if t.event_date else '-' }}</td>
+          <td class="wrap"><a class="link" href="{{ url_for('tournament.tournament_detail', tournament_id=t.id) }}">{{ t.name }}</a></td>
+          <td class="wrap">{{ t.venue or '-' }}</td>
+          <td>{{ t.divisions|length }}</td>
+          <td>{% if t.is_published %}<span class="badge ok">公開中</span>{% else %}<span class="badge off">非公開</span>{% endif %}</td>
+          <td>
+            <form method="post" action="{{ url_for('tournament.tournament_delete', tournament_id=t.id) }}"
+                  onsubmit="return confirm('大会「{{ t.name }}」を階級・トーナメント表ごと削除しますか？');">
+              <button class="small danger" type="submit">削除</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="muted">大会はまだありません。「大会を作成」から始めてください。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

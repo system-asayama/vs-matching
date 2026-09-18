@@ -1,0 +1,47 @@
+{# トーナメント表の描画。rounds: [[Match,...], ...]、total_rounds、round_label、admin: 操作ボタンを出すか、warnings: {match_id: [..]} #}
+{% set final = rounds[-1][0] if rounds else none %}
+{% if final and final.winner %}
+<div class="champion">🏆 優勝: {{ final.winner.name }}{% if final.winner.dojo %}（{{ final.winner.dojo }}）{% endif %}</div>
+{% endif %}
+<div class="bracket">
+  {% for ms in rounds %}
+  {% set r = loop.index %}
+  <div class="round">
+    <div class="round-title">{{ round_label(r, total_rounds) }}</div>
+    {% for m in ms %}
+    <div class="match">
+      <div class="no">
+        <span>第{{ m.index + 1 }}試合{% if m.is_bye %}（不戦勝）{% endif %}</span>
+        {% if admin and m.winner and not m.is_bye %}
+        <form method="post" action="{{ url_for('tournament.match_clear', match_id=m.id) }}">
+          <button class="small secondary" type="submit">結果取消</button>
+        </form>
+        {% endif %}
+      </div>
+      {% for f in (m.fighter1, m.fighter2) %}
+      <div class="side {% if f and m.winner_id == f.id %}winner{% endif %} {% if not f %}empty{% endif %}">
+        <span>
+          {% if f %}
+            {% if r == 1 and seeds and seeds.get(f.id) %}<span class="seed">#{{ seeds[f.id] }}</span>{% endif %}
+            {{ f.name }}
+            <span class="dojo">{{ f.dojo }}{% if f.weight_kg %} ／ {{ '%g'|format(f.weight_kg) }}kg{% endif %} ／ {{ f.belt }}</span>
+          {% elif m.is_bye %}（不戦勝）
+          {% elif r > 1 %}（未定）
+          {% else %}（空き）{% endif %}
+        </span>
+        {% if admin and f and m.is_ready and not m.winner %}
+        <form method="post" action="{{ url_for('tournament.match_winner', match_id=m.id) }}">
+          <input type="hidden" name="winner_id" value="{{ f.id }}">
+          <button class="small" type="submit">勝ち</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% if r == 1 and warnings and warnings.get(m.id) %}
+      <div class="warns">{% for w in warnings[m.id] %}<span class="badge warn">{{ w }}</span> {% endfor %}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ '階級を編集' if d.id else '階級を追加' }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card medium">
+  <h1>{{ '階級を編集' if d.id else '階級を追加' }} <span class="muted">{{ t.name }}</span></h1>
+  <form method="post">
+    <label for="name">階級名 *</label>
+    <input id="name" name="name" value="{{ d.name or '' }}" placeholder="例: 一般男子 軽量級（-65kg）" required autofocus>
+
+    <fieldset>
+      <legend>出場条件（空欄は制限なし）</legend>
+      <label for="gender">性別</label>
+      <select id="gender" name="gender">
+        <option value="" {% if not d.gender %}selected{% endif %}>指定なし</option>
+        {% for v, l in genders %}<option value="{{ v }}" {% if d.gender == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select>
+      <div class="grid2">
+        <div><label for="min_age">年齢 下限</label><input id="min_age" name="min_age" type="number" min="0" value="{{ d.min_age if d.min_age is not none else '' }}"></div>
+        <div><label for="max_age">年齢 上限</label><input id="max_age" name="max_age" type="number" min="0" value="{{ d.max_age if d.max_age is not none else '' }}"></div>
+        <div><label for="min_weight">体重 下限 (kg)</label><input id="min_weight" name="min_weight" type="number" step="0.1" min="0" value="{{ '%g'|format(d.min_weight) if d.min_weight is not none else '' }}"></div>
+        <div><label for="max_weight">体重 上限 (kg)</label><input id="max_weight" name="max_weight" type="number" step="0.1" min="0" value="{{ '%g'|format(d.max_weight) if d.max_weight is not none else '' }}"></div>
+        <div>
+          <label for="min_belt">帯 下限</label>
+          <select id="min_belt" name="min_belt">
+            <option value="">指定なし</option>
+            {% for b in belts %}<option value="{{ loop.index0 }}" {% if d.min_belt == loop.index0 %}selected{% endif %}>{{ b }}</option>{% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="max_belt">帯 上限</label>
+          <select id="max_belt" name="max_belt">
+            <option value="">指定なし</option>
+            {% for b in belts %}<option value="{{ loop.index0 }}" {% if d.max_belt == loop.index0 %}selected{% endif %}>{{ b }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>組み合わせルール</legend>
+      <label><input type="checkbox" name="avoid_same_dojo" {% if d.avoid_same_dojo is none or d.avoid_same_dojo %}checked{% endif %}> 同じ道場の選手が1回戦で当たらないようにする</label>
+      <label for="weight_tolerance_kg">体重差の注意しきい値 (kg)</label>
+      <input id="weight_tolerance_kg" name="weight_tolerance_kg" type="number" step="0.5" min="0" value="{{ '%g'|format(d.weight_tolerance_kg if d.weight_tolerance_kg is not none else 5) }}">
+      <p class="muted">この差を超える組み合わせには注意マークを表示します。</p>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit">{{ '更新する' if d.id else '追加する' }}</button>
+      <a class="btn secondary" href="{{ url_for('tournament.division_detail', division_id=d.id) if d.id else url_for('tournament.tournament_detail', tournament_id=t.id) }}">戻る</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

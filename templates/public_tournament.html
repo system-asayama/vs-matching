@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{{ t.name }}</h1>
+  <p class="muted">
+    開催日: {{ t.event_date.strftime('%Y-%m-%d') if t.event_date else '未定' }}
+    {% if t.venue %}／ 会場: {{ t.venue }}{% endif %}
+    {% if t.notes %}<br>{{ t.notes }}{% endif %}
+  </p>
+</div>
+
+{% for d, rounds in divisions %}
+<div class="card">
+  <h2>{{ d.name }} <span class="muted">{{ d.entries|length }}名</span></h2>
+  {% if rounds %}
+    {% set total_rounds = rounds|length %}
+    {% set admin = false %}
+    {% set warnings = none %}
+    {% set seeds = none %}
+    {% include "_bracket.html" with context %}
+  {% else %}
+    <p class="muted">トーナメント表はまだ作成されていません。</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><p class="muted">階級がまだありません。</p></div>
+{% endfor %}
+<p><a class="btn secondary" href="{{ url_for('tournament.public_tournaments') }}">大会一覧へ戻る</a></p>
+{% endblock %}

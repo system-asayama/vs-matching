@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h1>{{ t.name }}
+      {% if t.is_published %}<span class="badge ok">公開中</span>{% else %}<span class="badge off">非公開</span>{% endif %}
+    </h1>
+    <div class="actions">
+      <a class="btn small secondary" href="{{ url_for('tournament.tournament_edit', tournament_id=t.id) }}">大会情報を編集</a>
+      <form method="post" action="{{ url_for('tournament.tournament_publish', tournament_id=t.id) }}">
+        <button class="small {{ 'warn' if t.is_published else '' }}" type="submit">{{ '非公開にする' if t.is_published else '利用者に公開する' }}</button>
+      </form>
+      <a class="btn small secondary" href="{{ url_for('tournament.public_tournament', tournament_id=t.id) }}">閲覧画面を見る</a>
+    </div>
+  </div>
+  <p class="muted">
+    開催日: {{ t.event_date.strftime('%Y-%m-%d') if t.event_date else '未設定' }}
+    {% if t.venue %}／ 会場: {{ t.venue }}{% endif %}
+    {% if t.notes %}<br>{{ t.notes }}{% endif %}
+  </p>
+</div>
+
+<div class="card">
+  <div class="toolbar">
+    <h2>階級</h2>
+    <a class="btn small" href="{{ url_for('tournament.division_new', tournament_id=t.id) }}">＋ 階級を追加</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>階級名</th><th>条件</th><th>エントリー</th><th>トーナメント表</th><th></th></tr></thead>
+      <tbody>
+        {% for d in t.divisions %}
+        <tr>
+          <td class="wrap"><a class="link" href="{{ url_for('tournament.division_detail', division_id=d.id) }}">{{ d.name }}</a></td>
+          <td class="wrap muted">
+            {% if d.gender %}{{ '男性' if d.gender == 'male' else '女性' }}{% endif %}
+            {% if d.min_age is not none or d.max_age is not none %} ／ {{ d.min_age if d.min_age is not none else '' }}〜{{ d.max_age if d.max_age is not none else '' }}歳{% endif %}
+            {% if d.min_weight is not none or d.max_weight is not none %} ／ {{ '%g'|format(d.min_weight) if d.min_weight is not none else '' }}〜{{ '%g'|format(d.max_weight) if d.max_weight is not none else '' }}kg{% endif %}
+          </td>
+          <td>{{ d.entries|length }}名</td>
+          <td>
+            {% if d.matches %}<span class="badge ok">生成済み（{{ d.bracket_size }}枠）</span>
+            {% else %}<span class="badge off">未生成</span>{% endif %}
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('tournament.division_delete', division_id=d.id) }}"
+                  onsubmit="return confirm('階級「{{ d.name }}」を削除しますか？');">
+              <button class="small danger" type="submit">削除</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="muted">階級がまだありません。性別・年齢・体重・帯の条件で階級を作ると、条件に合う選手を自動で集められます。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

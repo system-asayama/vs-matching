@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}選手一覧 - vs-matching{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="toolbar">
+    <h1>選手一覧 <span class="muted">{{ fighters|length }}名</span></h1>
+    <div class="actions">
+      <form method="get" action="{{ url_for('tournament.fighters') }}" class="inline">
+        <input name="q" class="small" placeholder="氏名・ふりがな・道場で検索" value="{{ q }}">
+        <button class="small secondary" type="submit">検索</button>
+      </form>
+      <a class="btn" href="{{ url_for('tournament.fighter_new') }}">＋ 選手を登録</a>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>氏名</th><th>性別</th><th>年齢</th><th>身長</th><th>体重</th><th>帯</th><th>経験</th><th>戦績</th><th>道場</th><th>強さ</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for f, score in fighters %}
+        <tr>
+          <td class="wrap"><a class="link" href="{{ url_for('tournament.fighter_edit', fighter_id=f.id) }}">{{ f.name }}</a>
+            {% if f.kana %}<br><span class="muted">{{ f.kana }}</span>{% endif %}</td>
+          <td>{{ f.gender_label }}</td>
+          <td>{{ f.age_at() if f.age_at() is not none else '-' }}</td>
+          <td>{{ '%g'|format(f.height_cm) ~ 'cm' if f.height_cm else '-' }}</td>
+          <td>{{ '%g'|format(f.weight_kg) ~ 'kg' if f.weight_kg else '-' }}</td>
+          <td>{{ f.belt }}</td>
+          <td>{{ '%g'|format(f.experience_years) }}年</td>
+          <td>{{ f.record }}</td>
+          <td class="wrap">{{ f.dojo or '-' }}</td>
+          <td><strong>{{ score }}</strong></td>
+          <td>
+            <form method="post" action="{{ url_for('tournament.fighter_delete', fighter_id=f.id) }}"
+                  onsubmit="return confirm('「{{ f.name }}」を削除しますか？');">
+              <button class="small danger" type="submit">削除</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11" class="muted">選手はまだ登録されていません。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card medium">
+  <h2>CSVで一括登録</h2>
+  <p class="muted">
+    <a class="link" href="{{ url_for('tournament.fighters_csv_template') }}">テンプレートCSVをダウンロード</a>
+    して記入し、アップロードしてください。文字コードは UTF-8 / Shift_JIS のどちらでも読み込めます。
+    性別は「男性/女性」、生年月日は「2000-04-01」形式、帯は「無級・10級〜1級・初段〜六段以上」で記入します。
+  </p>
+  <form method="post" action="{{ url_for('tournament.fighters_import') }}" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button type="submit">取り込む</button>
+  </form>
+</div>
+{% endblock %}

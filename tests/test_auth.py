@@ -99,7 +99,7 @@ def test_admin_creates_user_and_user_can_login(client):
     r = login(client, "taro", "userpass1")
     body = r.get_data(as_text=True)
     assert "ようこそ、太郎 さん" in body
-    assert "ダッシュボード" in body
+    assert "大会一覧" in body
     # 利用者は管理画面に入れない
     assert client.get("/admin/users").status_code == 403
     assert client.get("/admin/users/new").status_code == 403

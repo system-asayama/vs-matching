@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ '大会を編集' if t.id else '大会を作成' }} - vs-matching{% endblock %}
+{% block content %}
+<div class="card medium">
+  <h1>{{ '大会を編集' if t.id else '大会を作成' }}</h1>
+  <form method="post">
+    <label for="name">大会名 *</label>
+    <input id="name" name="name" value="{{ t.name or '' }}" required autofocus>
+    <div class="grid2">
+      <div>
+        <label for="event_date">開催日（年齢計算の基準日）</label>
+        <input id="event_date" name="event_date" type="date" value="{{ t.event_date.isoformat() if t.event_date else '' }}">
+      </div>
+      <div>
+        <label for="venue">会場</label>
+        <input id="venue" name="venue" value="{{ t.venue or '' }}">
+      </div>
+    </div>
+    <label for="notes">備考</label>
+    <textarea id="notes" name="notes" rows="3">{{ t.notes or '' }}</textarea>
+    <div class="actions">
+      <button type="submit">{{ '更新する' if t.id else '作成する' }}</button>
+      <a class="btn secondary" href="{{ url_for('tournament.tournament_detail', tournament_id=t.id) if t.id else url_for('tournament.tournaments') }}">戻る</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
