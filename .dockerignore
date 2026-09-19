@@ -1,0 +1,9 @@
+.git
+.github
+.claude
+tests
+__pycache__
+*.pyc
+instance
+*.db
+.env
